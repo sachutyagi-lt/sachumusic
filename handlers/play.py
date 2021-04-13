@@ -112,8 +112,8 @@ async def play(_, message: Message):
                 [
                     [
                         InlineKeyboardButton(
-                            text="Join Updates Channel ",
-                            url=f"https://t.me/daisyxupdates")
+                            text="Join Updates GROUP ",
+                            url=f"https:// @Hindi_chattinggg_IND ")
 
                     ]
                 ]
@@ -190,7 +190,7 @@ async def play(_, message: Message):
         await message.reply_photo(
         photo="final.png",
         reply_markup=keyboard,
-        caption="▶️ **Playing** here the song requested by {} via DaisyXmusic 😜".format(
+        caption="▶️ **Playing** here the song requested by {} via cuXmusic😜".format(
         message.from_user.mention()
         ),
     )
