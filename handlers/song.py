@@ -4,6 +4,7 @@ import requests
 import aiohttp
 import youtube_dl
 import wget
+import math
 from pyrogram import filters, Client
 from youtube_search import YoutubeSearch
 from Python_ARQ import ARQ
@@ -18,8 +19,69 @@ import asyncio
 from typing import Callable, Coroutine, Dict, List, Tuple, Union
 import sys
 import time
+from helpers.errors import DurationLimitError
+
+@Client.on_message(filters.command('song') & ~filters.private & ~filters.channel)
+def song(client, message):
+
+    user_id = message.from_user.id 
+    user_name = message.from_user.first_name 
+    rpk = "["+user_name+"](tg://user?id="+str(user_id)+")"
+
+    query = ''
+    for i in message.command[1:]:
+        query += ' ' + str(i)
+    print(query)
+    m = message.reply('🔎 Finding the song...')
+    ydl_opts = {"format": "bestaudio[ext=m4a]"}
+    try:
+        results = YoutubeSearch(query, max_results=1).to_dict()
+        link = f"https://youtube.com{results[0]['url_suffix']}"
+        #print(results)
+        title = results[0]["title"][:40]       
+        thumbnail = results[0]["thumbnails"][0]
+        thumb_name = f'thumb{title}.jpg'
+        thumb = requests.get(thumbnail, allow_redirects=True)
+        open(thumb_name, 'wb').write(thumb.content)
+
+
+        duration = results[0]["duration"]
+        url_suffix = results[0]["url_suffix"]
+        views = results[0]["views"]
+
+    except Exception as e:
+        m.edit(
+            "❌ Found Nothing.\n\nTry another keywork or maybe spell it properly."
+        )
+        print(str(e))
+        return
+    m.edit("Downloading the song ")
+    try:
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(link, download=False)
+            audio_file = ydl.prepare_filename(info_dict)
+            ydl.process_info(info_dict)
+        rep = '**🎵 Uploaded by **'
+        secmul, dur, dur_arr = 1, 0, duration.split(':')
+        for i in range(len(dur_arr)-1, -1, -1):
+            dur += (int(dur_arr[i]) * secmul)
+            secmul *= 60
+        message.reply_audio(audio_file, caption=rep, thumb=thumb_name, parse_mode='md', title=title, duration=dur)
+        m.delete()
+    except Exception as e:
+        m.edit('❌ Error')
+        print(e)
+
+    try:
+        os.remove(audio_file)
+        os.remove(thumb_name)
+    except Exception as e:
+        print(e)
+
 ARQ_API = "http://35.240.133.234:8000"
 arq = ARQ(ARQ_API)
+
+
 def get_text(message: Message) -> [None, str]:
     text_to_return = message.text
     if message.text is None:
@@ -182,79 +244,7 @@ def time_to_seconds(time):
     return sum(int(x) * 60 ** i for i, x in enumerate(reversed(stringt.split(':'))))
 
 
-@Client.on_message(filters.command('song') & ~filters.private & ~filters.channel)
-def song(client, message):
-    #global is_downloading
-    #if is_downloading:
-        #await message.reply_text("Another download is in progress, try again after sometime.")
-        #return
-    
-    user_id = message.from_user.id 
-    user_name = message.from_user.first_name 
-    rpk = "["+user_name+"](tg://user?id="+str(user_id)+")"
 
-    query = ''
-    for i in message.command[1:]:
-        query += ' ' + str(i)
-    print(query)
-    m = message.reply('🔎 Finding the song...')
-    ydl_opts = {"format": "bestaudio[ext=m4a]"}
-    try:
-        results = YoutubeSearch(query, max_results=1).to_dict()
-        link = f"https://youtube.com{results[0]['url_suffix']}"
-        #print(results)
-        title = results[0]["title"][:40]       
-        thumbnail = results[0]["thumbnails"][0]
-        thumb_name = f'thumb{title}.jpg'
-        thumb = requests.get(thumbnail, allow_redirects=True)
-        open(thumb_name, 'wb').write(thumb.content)
-
-
-        duration = results[0]["duration"]
-        dur = int(duration)
-        url_suffix = results[0]["url_suffix"]
-        views = results[0]["views"]
-
-    except Exception as e:
-        m.edit(
-            "❌ Found Nothing.\n\nTry another keywork or maybe spell it properly."
-        )
-        print(str(e))
-        return
-    
-
-    duration1 = round(dur / 60)
-
-    if duration1 > 60:
-        raise DurationLimitError(
-            f"❌ Songs longer than 60 minute(s) aren't allowed, the provided song is {duration} minute(s)"
-        )
-    m.edit("Downloading the song ")
-    try:
-        #is_downloading = True
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(link, download=False)
-            audio_file = ydl.prepare_filename(info_dict)
-            ydl.process_info(info_dict)
-        rep = '**🎵 Uploaded by **'
-        secmul, dur, dur_arr = 1, 0, duration.split(':')
-        for i in range(len(dur_arr)-1, -1, -1):
-            dur += (int(dur_arr[i]) * secmul)
-            secmul *= 60
-        message.reply_audio(audio_file, caption=rep, thumb=thumb_name, parse_mode='md', title=title, duration=dur)
-        #is_downloading = False
-        m.delete()
-    except Exception as e:
-        #is_downloading = False
-        m.edit('❌ Error')
-        print(e)
-
-    try:
-        os.remove(audio_file)
-        os.remove(thumb_name)
-    except Exception as e:
-        print(e)
-    #is_downloading = False
 
 
 
@@ -353,13 +343,6 @@ async def ytmusic(client,message: Message):
     kekme = f"https://img.youtube.com/vi/{fridayz}/hqdefault.jpg"
     await asyncio.sleep(0.6)
     url = mo
-    infoo = ydl.extract_info(url, False)
-    duration = round(infoo["duration"] / 60)
-
-    if duration > 8:
-        raise DurationLimitError(
-            f"❌ Videos longer than 8 minute(s) aren't allowed, the provided video is {duration} minute(s)"
-        )
     sedlyf = wget.download(kekme)
     opts = {
             "format": "best",
@@ -377,11 +360,24 @@ async def ytmusic(client,message: Message):
         }
     try:
         is_downloading = True
-        with YoutubeDL(opts) as ytdl:
-            ytdl_data = ydl.extract_info(url, download=True)
+        with youtube_dl.YoutubeDL(opts) as ytdl:
+            infoo = ytdl.extract_info(url, False)
+            duration = round(infoo["duration"] / 60)
+
+            if duration > 8:
+                await pablo.edit(
+                    f"❌ Videos longer than 8 minute(s) aren't allowed, the provided video is {duration} minute(s)"
+                )
+                is_downloading = False
+                return
+            ytdl_data = ytdl.extract_info(url, download=True)
+            
+    
     except Exception as e:
-        await event.edit(event, f"**Failed To Download** \n**Error :** `{str(e)}`")
+        #await pablo.edit(event, f"**Failed To Download** \n**Error :** `{str(e)}`")
+        is_downloading = False
         return
+    
     c_time = time.time()
     file_stark = f"{ytdl_data['id']}.mp4"
     capy = f"**Video Name ➠** `{thum}` \n**Requested For :** `{urlissed}` \n**Channel :** `{thums}` \n**Link :** `{mo}`"
