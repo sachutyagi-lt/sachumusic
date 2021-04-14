@@ -19,6 +19,10 @@ async def start(_, message: Message):
                     InlineKeyboardButton(
                         "👨‍💻 Owner 👨‍💻", url="https://t.me/UNIQUEGURI"
                     )
+                   ],[
+                    InlineKeyboardButton(
+                        "Support channel🎙️" , url="https://t.me/cuXmusic"
+                  )
                 ],[ 
                     InlineKeyboardButton(
                         "Support Chat 🎙️", url="https://t.me/Hindi_chattinggg_IND"
