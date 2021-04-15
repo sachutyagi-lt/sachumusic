@@ -369,8 +369,7 @@ async def play(_, message: Message):
                     [
                         InlineKeyboardButton(
                             text="Join Updates Channel ",
-                            url=f"https://t.me/daisyxupdates")
-
+                            url=f"https://t.me/cuXmusic")
                     ]
                 ]
             )
@@ -467,7 +466,7 @@ async def play(_, message: Message):
         await message.reply_photo(
         photo="final.png",
         reply_markup=keyboard,
-        caption="▶️ **Playing** here the song requested by {} via DaisyXmusic 😜".format(
+        caption="▶️ **Playing** here the song requested by {} via cuXmusic 😜".format(
         message.from_user.mention()
         ),
     )
@@ -529,9 +528,9 @@ async def deezer(client: Client, message_: Message):
         loc = file_path
         appendable = [s_name, r_by, loc]
         qeue.append(appendable)
-        await res.edit_text(f"✯DaisyXmusic✯= #️⃣ Queued at position {position}.")
+        await res.edit_text(f"✯cuXmusic✯= #️⃣ Queued at position {position}.")
     else:
-        await res.edit_text("✯DaisyXmusic✯=▶️ Playing.....")
+        await res.edit_text✯cuXmusic✯=▶️ Playing.....")
         chat_id = message_.chat.id
         que[chat_id] = []
         qeue = que.get(message_.chat.id)
@@ -546,7 +545,7 @@ async def deezer(client: Client, message_: Message):
         chat_id=message_.chat.id,
         reply_markup=keyboard,
         photo="final.png",
-        caption=f"Playing [{title}]({url}) Via [Deezer](https://t.me/DaisyXupdates)."
+        caption=f"Playing [{title}]({url}) Via [Deezer](https://t.me/cuXmusic)."
     ) 
     os.remove("final.png")
 
@@ -592,7 +591,7 @@ async def jiosaavn(client: Client, message_: Message):
              [
                  InlineKeyboardButton(
                      text="Join Updates Channel",
-                     url=f"https://t.me/daisyxupdates")
+                     url=f"https://t.me/cuXmusic")
 
              ]
          ]
@@ -606,9 +605,9 @@ async def jiosaavn(client: Client, message_: Message):
         loc = file_path
         appendable = [s_name, r_by, loc]
         qeue.append(appendable)
-        await res.edit_text(f"✯DaisyXmusic✯=#️⃣ Queued at position {position}.")
+        await res.edit_text(f"✯cuXmusic✯=#️⃣ Queued at position {position}.")
     else:
-        await res.edit_text("✯DaisyXmusic✯=▶️ Playing.....")
+        await res.edit_text("✯cuXmusic✯=▶️ Playing.....")
         chat_id = message_.chat.id
         que[chat_id] = []
         qeue = que.get(message_.chat.id)
@@ -625,7 +624,7 @@ async def jiosaavn(client: Client, message_: Message):
         chat_id=message_.chat.id,
         reply_markup=keyboard,
         photo="final.png",
-        caption=f"Playing {sname} Via [Jiosaavn](https://t.me/Daisyxupdates)",
+        caption=f"Playing {sname} Via [Jiosaavn](https://t.me/cuXmusic)",
         
     )
     os.remove("final.png")
