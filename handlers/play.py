@@ -40,7 +40,7 @@ from config import que
 from Python_ARQ import ARQ
 import json
 import wget
-
+inuka = 00000000
 chat_id = None
 
            
@@ -109,26 +109,6 @@ async def generate_cover(requested_by, title, views, duration, thumbnail):
     os.remove("temp.png")
     os.remove("background.png")
 
-async def member_permissions(chat_id, user_id):
-    perms = []
-    member = await Client.get_chat_member(chat_id, user_id)
-    if member.can_post_messages:
-        perms.append("can_post_messages")
-    if member.can_edit_messages:
-        perms.append("can_edit_messages")
-    if member.can_delete_messages:
-        perms.append("can_delete_messages")
-    if member.can_restrict_members:
-        perms.append("can_restrict_members")
-    if member.can_promote_members:
-        perms.append("can_promote_members")
-    if member.can_change_info:
-        perms.append("can_change_info")
-    if member.can_invite_users:
-        perms.append("can_invite_users")
-    if member.can_pin_messages:
-        perms.append("can_pin_messages")
-    return perms
 
  
 
@@ -224,17 +204,12 @@ async def settings(client, message):
 @Client.on_callback_query(filters.regex(pattern=r'^(play|pause|skip|leave|puse|resume|playlist)$'))
 async def m_cb(b, cb):
     global que
-
-    if len(await member_permissions(cb.message.chat.id, cb.message.from_user.id)) < 1:
-        return
-    print('awesome')
     qeue = que.get(cb.message.chat.id)
     type_ = cb.matches[0].group(1)
     chat_id = cb.message.chat.id
     m_chat = cb.message.chat
     the_data = cb.message.reply_markup.inline_keyboard[1][0].callback_data
     if type_ == 'pause':
-        
         if (
             chat_id not in callsmusic.pytgcalls.active_calls
                 ) or (
@@ -249,7 +224,6 @@ async def m_cb(b, cb):
                 
 
     elif type_ == 'play':
-        
         if (
             chat_id not in callsmusic.pytgcalls.active_calls
             ) or (
@@ -286,7 +260,6 @@ async def m_cb(b, cb):
         await cb.message.edit(msg)      
                       
     elif type_ == 'resume':
-        
         if (
             chat_id not in callsmusic.pytgcalls.active_calls
             ) or (
@@ -297,7 +270,6 @@ async def m_cb(b, cb):
             callsmusic.pytgcalls.resume_stream(chat_id)
             await cb.answer('Music Resumed!')     
     elif type_ == 'puse':
-        
         if (
             chat_id not in callsmusic.pytgcalls.active_calls
             ) or (
@@ -330,7 +302,6 @@ async def m_cb(b, cb):
                 await cb.message.reply_text(f'- Skipped track\n- Now Playing **{qeue[0][0]}**')
 
     else:
-        
         if chat_id in callsmusic.pytgcalls.active_calls:
             try:
                 callsmusic.queues.clear(chat_id)
@@ -369,7 +340,8 @@ async def play(_, message: Message):
                     [
                         InlineKeyboardButton(
                             text="Join Updates Channel ",
-                            url=f"https://t.me/cuXmusic")
+                            url=f"https://t.me/daisyxupdates")
+
                     ]
                 ]
             )
@@ -466,7 +438,7 @@ async def play(_, message: Message):
         await message.reply_photo(
         photo="final.png",
         reply_markup=keyboard,
-        caption="▶️ **Playing** here the song requested by {} via cuXmusic 😜".format(
+        caption="▶️ **Playing** here the song requested by {} via cuXmusic😜".format(
         message.from_user.mention()
         ),
     )
@@ -530,7 +502,7 @@ async def deezer(client: Client, message_: Message):
         qeue.append(appendable)
         await res.edit_text(f"✯cuXmusic✯= #️⃣ Queued at position {position}.")
     else:
-        await res.edit_text✯cuXmusic✯=▶️ Playing.....")
+        await res.edit_text("✯cuXmusic✯=▶️ Playing.....")
         chat_id = message_.chat.id
         que[chat_id] = []
         qeue = que.get(message_.chat.id)
@@ -589,10 +561,9 @@ async def jiosaavn(client: Client, message_: Message):
 
              ],                     
              [
-                 InlineKeyboardButton(
-                     text="Join Updates Channel",
-                     url=f"https://t.me/cuXmusic")
-
+               InlineKeyboardButton(
+                   text="Join Updates Channel",
+                   url='https://t.me/cuXmusic')
              ]
          ]
      )
@@ -611,7 +582,7 @@ async def jiosaavn(client: Client, message_: Message):
         chat_id = message_.chat.id
         que[chat_id] = []
         qeue = que.get(message_.chat.id)
-        s_name = title
+        s_name = sname
         r_by = message_.from_user
         loc = file_path
         appendable = [s_name, r_by, loc]
