@@ -3,10 +3,20 @@ from asyncio.queues import QueueEmpty
 from pyrogram import Client
 from pyrogram.types import Message
 from callsmusic import callsmusic
-
+import traceback
+import os
+import sys
+from pyrogram.errors.exceptions.bad_request_400 import ChatAdminRequired
+from pyrogram.errors.exceptions.flood_420 import FloodWait
+from pyrogram import filters, emoji
 from config import BOT_NAME as BN
 from helpers.filters import command, other_filters
 from helpers.decorators import errors, authorized_users_only
+from config import que
+
+
+
+
 
 
 @Client.on_message(command("pause") & other_filters)
@@ -59,6 +69,7 @@ async def stop(_, message: Message):
 @errors
 @authorized_users_only
 async def skip(_, message: Message):
+    global que
     if message.chat.id not in callsmusic.pytgcalls.active_calls:
         await message.reply_text("❗ Nothing is playing to skip!")
     else:
@@ -71,5 +82,13 @@ async def skip(_, message: Message):
                 message.chat.id,
                 callsmusic.queues.get(message.chat.id)["file"]
             )
+                
 
-        await message.reply_text("➡️ Skipped the current song!")
+    qeue = que.get(message.chat.id)
+    if qeue:
+        skip = qeue.pop(0)
+    if not qeue:
+        return
+    await message.reply_text(f'- Skipped **{skip[0]}**\n- Now Playing **{qeue[0][0]}**')
+
+
