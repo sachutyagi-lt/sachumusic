@@ -340,7 +340,7 @@ async def play(_, message: Message):
                     [
                         InlineKeyboardButton(
                             text="Join Updates Channel ",
-                            url=f"https://t.me/daisyxupdates")
+                            url=f"https://t.me/cuXmusic")
 
                     ]
                 ]
