@@ -382,7 +382,7 @@ async def m_cb(b, cb):
                     callsmusic.queues.get(chat_id)["file"]
                 )
                 await cb.answer('Skipped')
-                await cb.message.edit((m_chat, queue), reply_markup=r_ply(the_data))
+                await cb.message.edit((m_chat, qeue), reply_markup=r_ply(the_data))
                 await cb.message.reply_text(f'- Skipped track\n- Now Playing **{qeue[0][0]}**')
 
     else:      
@@ -419,11 +419,6 @@ async def play(_, message: Message):
                    return
 
                try:
-                   user = await USER.get_me()
-               except:
-                   user.first_name =  "cuXmusic"
-
-               try:
                    await USER.join_chat(invitelink)
                    await lel.edit(
                        "<b>@chatuniversemusic1 userbot joined your chat</b>",
@@ -439,8 +434,8 @@ async def play(_, message: Message):
                    #)
                    pass
     try:
-        #chatdetails = await USER.get_chat(chid)
-        lmoa = await _.get_chat_member(chid,wew)
+        chatdetails = await USER.get_chat(chid)
+        #lmoa = await _.get_chat_member(chid,wew)
     except:
         await lel.edit(
             "<i> @chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
@@ -448,105 +443,62 @@ async def play(_, message: Message):
         return    
     sender_id = message.from_user.id
     sender_name = message.from_user.first_name
-    audio = (message.reply_to_message.audio or message.reply_to_message.voice) if message.reply_to_message else None
-    url = get_url(message)
-    
-    if audio:
-        if round(audio.duration / 60) > DURATION_LIMIT:
-            raise DurationLimitError(
-                f"❌ Videos longer than {DURATION_LIMIT} minute(s) aren't allowed to play!"
-            )
-        keyboard = InlineKeyboardMarkup(
+    await lel.edit("🔎 **Finding**")
+    sender_id = message.from_user.id
+    user_id = message.from_user.id
+    sender_name = message.from_user.first_name
+    user_name = message.from_user.first_name
+    rpk = "["+user_name+"](tg://user?id="+str(user_id)+")"
+
+    query = ''
+    for i in message.command[1:]:
+        query += ' ' + str(i)
+    print(query)
+    await lel.edit("🎵 **Processing**")
+    ydl_opts = {"format": "bestaudio[ext=m4a]"}
+    try:
+        results = YoutubeSearch(query, max_results=1).to_dict()
+        url = f"https://youtube.com{results[0]['url_suffix']}"
+        #print(results)
+        title = results[0]["title"][:40]       
+        thumbnail = results[0]["thumbnails"][0]
+        thumb_name = f'thumb{title}.jpg'
+        thumb = requests.get(thumbnail, allow_redirects=True)
+        open(thumb_name, 'wb').write(thumb.content)
+        duration = results[0]["duration"]
+        url_suffix = results[0]["url_suffix"]
+        views = results[0]["views"]
+
+    except Exception as e:
+        await lel.edit("Song not found.Try another song or maybe spell it properly.")
+        print(str(e))
+        return
+
+    keyboard = InlineKeyboardMarkup(
+            [   
                 [
-                    [
-                        InlineKeyboardButton('📖 Playlist', callback_data='playlist'),
-                        InlineKeyboardButton('Menu ⏯ ', callback_data='menu')
-
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            text="Join Updates Channel ",
-                            url=f"https://t.me/cuXmusic")
-
-                    ],
-                    [       
-                        InlineKeyboardButton(
-                            text="❌ Close",
-                            callback_data='cls')
-
-                    ]                           
-                ]
-            )
-        file_name = get_file_name(audio)
-        title = file_name
-        thumb_name = "https://telegra.ph/file/f6086f8909fbfeb0844f2.png"
-        thumbnail = thumb_name
-        duration = round(audio.duration / 60)
-        views = "Locally added"
-        requested_by = message.from_user.first_name
-        await generate_cover(requested_by, title, views, duration, thumbnail)  
-        file_path = await converter.convert(
-            (await message.reply_to_message.download(file_name))
-            if not path.isfile(path.join("downloads", file_name)) else file_name
-        )
-
-    else:
-        await lel.edit("🔎 **Finding**")
-        sender_id = message.from_user.id
-        user_id = message.from_user.id
-        sender_name = message.from_user.first_name
-        user_name = message.from_user.first_name
-        rpk = "["+user_name+"](tg://user?id="+str(user_id)+")"
-
-        query = ''
-        for i in message.command[1:]:
-            query += ' ' + str(i)
-        print(query)
-        await lel.edit("🎵 **Processing**")
-        ydl_opts = {"format": "bestaudio[ext=m4a]"}
-        try:
-            results = YoutubeSearch(query, max_results=1).to_dict()
-            url = f"https://youtube.com{results[0]['url_suffix']}"
-            #print(results)
-            title = results[0]["title"][:40]       
-            thumbnail = results[0]["thumbnails"][0]
-            thumb_name = f'thumb{title}.jpg'
-            thumb = requests.get(thumbnail, allow_redirects=True)
-            open(thumb_name, 'wb').write(thumb.content)
-            duration = results[0]["duration"]
-            url_suffix = results[0]["url_suffix"]
-            views = results[0]["views"]
-
-        except Exception as e:
-            await lel.edit("Song not found.Try another song or maybe spell it properly.")
-            print(str(e))
-            return
-
-        keyboard = InlineKeyboardMarkup(
-                [   
-                    [
                                
-                        InlineKeyboardButton('📖 Playlist', callback_data='playlist'),
-                        InlineKeyboardButton('Menu ⏯ ', callback_data='menu')
+                    InlineKeyboardButton('📖 Playlist', callback_data='playlist'),
+                    InlineKeyboardButton('Menu ⏯ ', callback_data='menu')
                 
-                    ],                     
-                    [
-                        InlineKeyboardButton(
-                            text="Watch On YouTube 🎬",
-                            url=f"{url}")
+                ],                     
+                [
+                    InlineKeyboardButton(
+                        text="Watch On YouTube 🎬",
+                        url=f"{url}")
 
-                    ],
-                    [       
-                        InlineKeyboardButton(
-                            text="❌ Close",
-                            callback_data='cls')
+                ],
+                [       
+                    InlineKeyboardButton(
+                        text="❌ Close",
+                        callback_data='cls')
 
-                    ]                             
-                ]
-            )
-        requested_by = message.from_user.first_name
-        await generate_cover(requested_by, title, views, duration, thumbnail)  
-        file_path = await converter.convert(youtube.download(url))
+                ]                             
+            ]
+        )
+    requested_by = message.from_user.first_name
+    await generate_cover(requested_by, title, views, duration, thumbnail)  
+    file_path = await converter.convert(youtube.download(url))
   
     if message.chat.id in callsmusic.pytgcalls.active_calls:
         position = await queues.put(message.chat.id, file=file_path)
@@ -575,7 +527,7 @@ async def play(_, message: Message):
         await message.reply_photo(
         photo="final.png",
         reply_markup=keyboard,
-        caption="▶️ **Playing** here the song requested by {} via cuXmusic😜".format(
+        caption="▶️ **Playing** here the song requested by {} via cuXmusic 😜".format(
         message.from_user.mention()
         ),
     )
@@ -609,11 +561,6 @@ async def deezer(client: Client, message_: Message):
                    return
 
                try:
-                   user = await USER.get_me()
-               except:
-                   user.first_name =  "cuXmusic"
-
-               try:
                    await USER.join_chat(invitelink)
                    await lel.edit(
                        "<b>@chatuniversemusic1 userbot joined your chat</b>",
@@ -629,14 +576,22 @@ async def deezer(client: Client, message_: Message):
                    #)
                    pass
     try:
-        #chatdetails = await USER.get_chat(chid)
-        lmoa = await client.get_chat_member(chid,wew)
+        chatdetails = await USER.get_chat(chid)
+        #lmoa = await client.get_chat_member(chid,wew)
     except:
         await lel.edit(
             "<i> @chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
         )
         return                            
     requested_by = message_.from_user.first_name
+    try:
+        #chatdetails = await USER.get_chat(chid)
+        lmoa = await client.get_chat_member(chid,wew)
+    except:
+        await lel.reply(
+            "<i>Looks like @chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
+        )
+        pass                 
     text = message_.text.split(" ", 1)
     queryy = text[1]
     res = await message_.reply_text(f"Searching 👀👀👀 for `{queryy}` on deezer")
@@ -688,7 +643,7 @@ async def deezer(client: Client, message_: Message):
         qeue.append(appendable)
         await res.edit_text(f"Playing [{title}]({url}) Via [Deezer](https://t.me/cuXmusic")
     else:
-        await res.edit_text("✯cuXmusic✯=▶️ Playing.....")
+        await res.edit_text(✯cuXmusic✯=▶️ Playing.....")
         chat_id = message_.chat.id
         que[chat_id] = []
         qeue = que.get(message_.chat.id)
@@ -724,7 +679,7 @@ async def jiosaavn(client: Client, message_: Message):
        usar = await USER.get_me()
        wew = usar.id
     except:
-       wew = 1658025987
+       wew  = 1658025987
     for administrator in administrators:
        if administrator == message_.from_user.id:  
                try:
@@ -736,14 +691,9 @@ async def jiosaavn(client: Client, message_: Message):
                    return
 
                try:
-                   user = await USER.get_me()
-               except:
-                   user.first_name =  "cuXmusic"
-
-               try:
                    await USER.join_chat(invitelink)
                    await lel.edit(
-                       "<b>@Chatuniversemusic1 userbot joined your chat</b>",
+                       "<b>@chatuniversemusic1 userbot joined your chat</b>",
                    )
 
                except UserAlreadyParticipant:
@@ -752,15 +702,15 @@ async def jiosaavn(client: Client, message_: Message):
                    #print(e)
                    #await lel.edit(
                    #    f"<b>User {user.first_name} couldn't join your group! Make sure user is not banned in group."
-                   #    "\n\nOr manually add @Chatuniversemusic1 add  to your Group and try again</b>",
+                   #    "\n\nOr manually add @chatuniversemusic1 to your Group and try again</b>",
                    #)
                    pass
     try:
-        #chatdetails = await USER.get_chat(chid)
-        lmoa = await client.get_chat_member(chid,wew)
+        chatdetails = await USER.get_chat(chid)
+        #lmoa = await client.get_chat_member(chid,wew)
     except:
         await lel.edit(
-            "<i>@Chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
+            "<i> @chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
         )
         return                         
     requested_by = message_.from_user.first_name
