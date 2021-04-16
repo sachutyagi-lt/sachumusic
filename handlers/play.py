@@ -4,7 +4,7 @@ from pyrogram import Client
 from pyrogram.types import Message, Voice
 from typing import Callable, Coroutine, Dict, List, Tuple, Union
 from callsmusic import callsmusic, queues
-
+from config import admins as inuka
 from helpers.admins import get_administrators
 from os import path
 import requests
@@ -18,7 +18,8 @@ from pyrogram.errors.exceptions.flood_420 import FloodWait
 import traceback
 import os
 import sys
-
+from callsmusic.callsmusic import client as USER
+from pyrogram.errors import UserAlreadyParticipant
 import converter
 from downloaders import youtube
 
@@ -28,7 +29,7 @@ from helpers.decorators import errors, authorized_users_only
 from helpers.errors import DurationLimitError
 from helpers.gets import get_url, get_file_name
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
+from cache.admins import admins as a
 import os
 import aiohttp
 import aiofiles
@@ -43,7 +44,17 @@ import wget
 chat_id = None
 
            
-                                          
+
+
+def cb_admin_check(func: Callable) -> Callable:
+    async def decorator(client, cb):
+        admemes = a.get(cb.message.chat.id)
+        if cb.from_user.id in admemes:
+            return await func(client, cb)
+        else:
+            await cb.answer('You ain\'t allowed!', show_alert=True)
+            return
+    return decorator                                                                       
                                           
                                           
                                           
@@ -173,8 +184,10 @@ def r_ply(type_):
             [
                 InlineKeyboardButton('Playlist 📖', 'playlist'),
                 
-            ]
-
+            ],
+            [       
+                InlineKeyboardButton("❌ Close",'cls')
+            ]        
         ]
     )
     return mar
@@ -213,15 +226,46 @@ async def settings(client, message):
     else:
         await message.reply('No VC instances running in this chat')
 
+@Client.on_callback_query(filters.regex(pattern=r'^(playlist)$'))
+async def p_cb(b, cb):
+    global que    
+    qeue = que.get(cb.message.chat.id)
+    type_ = cb.matches[0].group(1)
+    chat_id = cb.message.chat.id
+    m_chat = cb.message.chat
+    the_data = cb.message.reply_markup.inline_keyboard[1][0].callback_data
+    if type_ == 'playlist':           
+        queue = que.get(cb.message.chat.id)
+        if not queue:   
+            await cb.message.edit('Player is idle')
+        temp = []
+        for t in queue:
+            temp.append(t)
+        now_playing = temp[0][0]
+        by = temp[0][1].mention(style='md')
+        msg = "**Now Playing** in {}".format(cb.message.chat.title)
+        msg += "\n- "+ now_playing
+        msg += "\n- Req by "+by
+        temp.pop(0)
+        if temp:
+             msg += '\n\n'
+             msg += '**Queue**'
+             for song in temp:
+                 name = song[0]
+                 usr = song[1].mention(style='md')
+                 msg += f'\n- {name}'
+                 msg += f'\n- Req by {usr}\n'
+        await cb.message.edit(msg)      
 
-
-@Client.on_callback_query(filters.regex(pattern=r'^(play|pause|skip|leave|puse|resume|playlist)$'))
+@Client.on_callback_query(filters.regex(pattern=r'^(play|pause|skip|leave|puse|resume|menu|cls)$'))
+@cb_admin_check
 async def m_cb(b, cb):
     global que    
     qeue = que.get(cb.message.chat.id)
     type_ = cb.matches[0].group(1)
     chat_id = cb.message.chat.id
     m_chat = cb.message.chat
+
     the_data = cb.message.reply_markup.inline_keyboard[1][0].callback_data
     if type_ == 'pause':
         if (
@@ -237,7 +281,7 @@ async def m_cb(b, cb):
             await cb.message.edit(updated_stats(m_chat, qeue), reply_markup=r_ply('play'))
                 
 
-    elif type_ == 'play':
+    elif type_ == 'play':       
         if (
             chat_id not in callsmusic.pytgcalls.active_calls
             ) or (
@@ -250,21 +294,9 @@ async def m_cb(b, cb):
             await cb.message.edit(updated_stats(m_chat, qeue), reply_markup=r_ply('pause'))
                      
 
-    elif type_ == 'download':
-        if (
-            chat_id not in callsmusic.pytgcalls.active_calls
-            ) or (
-                callsmusic.pytgcalls.active_calls[chat_id] == 'playing'
-            ):
-                await cb.answer('Time is out honey!', show_alert=True)
-        else:
-            callsmusic.pytgcalls.resume_stream(chat_id)
-            await cb.answer('Music Download started!')
-            await cb.message.edit(updated_stats(m_chat, qeue), reply_markup=r_ply('pause'))
     elif type_ == 'playlist':
         queue = que.get(cb.message.chat.id)
-        if not queue:
-            
+        if not queue:   
             await cb.message.edit('Player is idle')
         temp = []
         for t in queue:
@@ -285,7 +317,7 @@ async def m_cb(b, cb):
                  msg += f'\n- Req by {usr}\n'
         await cb.message.edit(msg)      
                       
-    elif type_ == 'resume':
+    elif type_ == 'resume':     
         if (
             chat_id not in callsmusic.pytgcalls.active_calls
             ) or (
@@ -295,7 +327,7 @@ async def m_cb(b, cb):
         else:
             callsmusic.pytgcalls.resume_stream(chat_id)
             await cb.answer('Music Resumed!')     
-    elif type_ == 'puse':
+    elif type_ == 'puse':         
         if (
             chat_id not in callsmusic.pytgcalls.active_calls
                 ) or (
@@ -306,9 +338,33 @@ async def m_cb(b, cb):
             callsmusic.pytgcalls.pause_stream(chat_id)
             
             await cb.answer('Music Paused!')
+    elif type_ == 'cls':          
+        await cb.answer('Closed menu')
+        await cb.message.delete()       
 
-           
-    elif type_ == 'skip':
+    elif type_ == 'menu':  
+        stats = updated_stats(cb.message.chat, qeue)  
+        await cb.answer('Menu opened')
+        marr = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton('⏹', 'leave'),
+                    InlineKeyboardButton('⏸', 'puse'),
+                    InlineKeyboardButton('▶️', 'resume'),
+                    InlineKeyboardButton('⏭', 'skip')
+                
+                ],
+                [
+                    InlineKeyboardButton('Playlist 📖', 'playlist'),
+                
+                ],
+                [       
+                    InlineKeyboardButton("❌ Close",'cls')
+                ]        
+            ]
+        )
+        await cb.message.edit(stats, reply_markup=marr) 
+    elif type_ == 'skip':        
         if qeue:
             skip = qeue.pop(0)
         if chat_id not in callsmusic.pytgcalls.active_calls:
@@ -318,18 +374,18 @@ async def m_cb(b, cb):
 
             if callsmusic.queues.is_empty(chat_id):
                 callsmusic.pytgcalls.leave_group_call(chat_id)
-                active_chats[cb.message.chat.id] = {"playing": False, "muted": False}
+                
                 await cb.message.edit('- No More Playlist..\n- Leaving VC!')
             else:
                 callsmusic.pytgcalls.change_stream(
                     chat_id,
                     callsmusic.queues.get(chat_id)["file"]
                 )
-                await cb.answer()
-                await cb.message.edit(updated_stats(m_chat, queue), reply_markup=r_ply(the_data))
+                await cb.answer('Skipped')
+                await cb.message.edit((m_chat, queue), reply_markup=r_ply(the_data))
                 await cb.message.reply_text(f'- Skipped track\n- Now Playing **{qeue[0][0]}**')
 
-    else:
+    else:      
         if chat_id in callsmusic.pytgcalls.active_calls:
             try:
                 callsmusic.queues.clear(chat_id)
@@ -344,8 +400,52 @@ async def m_cb(b, cb):
 @Client.on_message(command("play") & other_filters)
 async def play(_, message: Message):
     global que
-    global lol
     lel = await message.reply("🔄 **Processing**")
+    administrators = await get_administrators(message.chat)
+    chid = message.chat.id
+    try:
+       usar = await USER.get_me()
+       wew = usar.id
+    except:
+       wew = 1658025987
+    for administrator in administrators:
+       if administrator == message.from_user.id:  
+               try:
+                   invitelink = await _.export_chat_invite_link(chid)
+               except:
+                   await lel.edit(
+                       "<b>Add me as admin of yor group first</b>",
+                   )
+                   return
+
+               try:
+                   user = await USER.get_me()
+               except:
+                   user.first_name =  "cuXmusic"
+
+               try:
+                   await USER.join_chat(invitelink)
+                   await lel.edit(
+                       "<b>@chatuniversemusic1 userbot joined your chat</b>",
+                   )
+
+               except UserAlreadyParticipant:
+                   pass
+               except Exception as e:
+                   #print(e)
+                   #await lel.edit(
+                   #    f"<b>User {user.first_name} couldn't join your group! Make sure user is not banned in group."
+                   #    "\n\nOr manually add @chatuniversemusic1 to your Group and try again</b>",
+                   #)
+                   pass
+    try:
+        #chatdetails = await USER.get_chat(chid)
+        lmoa = await _.get_chat_member(chid,wew)
+    except:
+        await lel.edit(
+            "<i> @chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
+        )
+        return    
     sender_id = message.from_user.id
     sender_name = message.from_user.first_name
     audio = (message.reply_to_message.audio or message.reply_to_message.voice) if message.reply_to_message else None
@@ -359,7 +459,8 @@ async def play(_, message: Message):
         keyboard = InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton('Playlist 📖 ', callback_data='playlist')
+                        InlineKeyboardButton('📖 Playlist', callback_data='playlist'),
+                        InlineKeyboardButton('Menu ⏯ ', callback_data='menu')
 
                     ],
                     [
@@ -367,7 +468,13 @@ async def play(_, message: Message):
                             text="Join Updates Channel ",
                             url=f"https://t.me/cuXmusic")
 
-                    ]
+                    ],
+                    [       
+                        InlineKeyboardButton(
+                            text="❌ Close",
+                            callback_data='cls')
+
+                    ]                           
                 ]
             )
         file_name = get_file_name(audio)
@@ -419,7 +526,8 @@ async def play(_, message: Message):
                 [   
                     [
                                
-                        InlineKeyboardButton('Playlist 📖', callback_data='playlist')
+                        InlineKeyboardButton('📖 Playlist', callback_data='playlist'),
+                        InlineKeyboardButton('Menu ⏯ ', callback_data='menu')
                 
                     ],                     
                     [
@@ -427,7 +535,13 @@ async def play(_, message: Message):
                             text="Watch On YouTube 🎬",
                             url=f"{url}")
 
-                    ]
+                    ],
+                    [       
+                        InlineKeyboardButton(
+                            text="❌ Close",
+                            callback_data='cls')
+
+                    ]                             
                 ]
             )
         requested_by = message.from_user.first_name
@@ -461,7 +575,7 @@ async def play(_, message: Message):
         await message.reply_photo(
         photo="final.png",
         reply_markup=keyboard,
-        caption="▶️ **Playing** here the song requested by {} via cuXmusic 😜".format(
+        caption="▶️ **Playing** here the song requested by {} via cuXmusic😜".format(
         message.from_user.mention()
         ),
     )
@@ -476,6 +590,52 @@ async def play(_, message: Message):
 )
 async def deezer(client: Client, message_: Message):
     global que
+    lel = await message_.reply("🔄 **Processing**")
+    administrators = await get_administrators(message_.chat)
+    chid = message_.chat.id
+    try:
+       usar = await USER.get_me()
+       wew = usar.id
+    except:
+       wew = 1658025987
+    for administrator in administrators:
+       if administrator == message_.from_user.id:  
+               try:
+                   invitelink = await client.export_chat_invite_link(chid)
+               except:
+                   await lel.edit(
+                       "<b>Add me as admin of yor group first</b>",
+                   )
+                   return
+
+               try:
+                   user = await USER.get_me()
+               except:
+                   user.first_name =  "cuXmusic"
+
+               try:
+                   await USER.join_chat(invitelink)
+                   await lel.edit(
+                       "<b>@chatuniversemusic1 userbot joined your chat</b>",
+                   )
+
+               except UserAlreadyParticipant:
+                   pass
+               except Exception as e:
+                   #print(e)
+                   #await lel.edit(
+                   #    f"<b>User {user.first_name} couldn't join your group! Make sure user is not banned in group."
+                   #    "\n\nOr manually add @chatuniversemusic1 to your Group and try again</b>",
+                   #)
+                   pass
+    try:
+        #chatdetails = await USER.get_chat(chid)
+        lmoa = await client.get_chat_member(chid,wew)
+    except:
+        await lel.edit(
+            "<i> @chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
+        )
+        return                            
     requested_by = message_.from_user.first_name
     text = message_.text.split(" ", 1)
     queryy = text[1]
@@ -497,14 +657,21 @@ async def deezer(client: Client, message_: Message):
     keyboard = InlineKeyboardMarkup(
          [   
              [
-                 InlineKeyboardButton('Playlist 📖', callback_data='playlist')         
+                 InlineKeyboardButton('📖 Playlist', callback_data='playlist'),
+                 InlineKeyboardButton('Menu ⏯ ', callback_data='menu')     
              ],                     
              [
                  InlineKeyboardButton(
                      text="Listen On Deezer 🎬",
                      url=f"{url}")
 
-             ]
+             ],
+             [       
+                 InlineKeyboardButton(
+                     text="❌ Close",
+                     callback_data='cls')
+
+            ]                      
          ]
      )
     file_path= await converter.convert(wget.download(url))
@@ -512,7 +679,7 @@ async def deezer(client: Client, message_: Message):
     await generate_cover(requested_by, title, artist, duration, thumbnail)
     if message_.chat.id in callsmusic.pytgcalls.active_calls:
         await res.edit("adding in queue")
-        position = await queues.put(message_.chat.id, file=file_path)
+        position = await queues.put(message_.chat.id, file=file_path)       
         qeue = que.get(message_.chat.id)
         s_name = title
         r_by = message_.from_user
@@ -531,7 +698,9 @@ async def deezer(client: Client, message_: Message):
         appendable = [s_name, r_by, loc]
         qeue.append(appendable)
         callsmusic.pytgcalls.join_group_call(message_.chat.id, file_path)
+
     await res.delete()
+
     m = await client.send_photo(
         chat_id=message_.chat.id,
         reply_markup=keyboard,
@@ -547,6 +716,53 @@ async def deezer(client: Client, message_: Message):
     & ~ filters.edited
 )
 async def jiosaavn(client: Client, message_: Message):
+    global que
+    lel = await message_.reply("🔄 **Processing**")
+    administrators = await get_administrators(message_.chat)
+    chid = message_.chat.id
+    try:
+       usar = await USER.get_me()
+       wew = usar.id
+    except:
+       wew = 1658025987
+    for administrator in administrators:
+       if administrator == message_.from_user.id:  
+               try:
+                   invitelink = await client.export_chat_invite_link(chid)
+               except:
+                   await lel.edit(
+                       "<b>Add me as admin of yor group first</b>",
+                   )
+                   return
+
+               try:
+                   user = await USER.get_me()
+               except:
+                   user.first_name =  "cuXmusic"
+
+               try:
+                   await USER.join_chat(invitelink)
+                   await lel.edit(
+                       "<b>@Chatuniversemusic1 userbot joined your chat</b>",
+                   )
+
+               except UserAlreadyParticipant:
+                   pass
+               except Exception as e:
+                   #print(e)
+                   #await lel.edit(
+                   #    f"<b>User {user.first_name} couldn't join your group! Make sure user is not banned in group."
+                   #    "\n\nOr manually add @Chatuniversemusic1 add  to your Group and try again</b>",
+                   #)
+                   pass
+    try:
+        #chatdetails = await USER.get_chat(chid)
+        lmoa = await client.get_chat_member(chid,wew)
+    except:
+        await lel.edit(
+            "<i>@Chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
+        )
+        return                         
     requested_by = message_.from_user.first_name
     chat_id=message_.chat.id
     text = message_.text.split(" ", 1)
@@ -573,13 +789,20 @@ async def jiosaavn(client: Client, message_: Message):
     keyboard = InlineKeyboardMarkup(
          [   
              [
-               InlineKeyboardButton('Playlist 📖', callback_data='playlist')
+               InlineKeyboardButton('📖 Playlist', callback_data='playlist'),
+               InlineKeyboardButton('Menu ⏯ ', callback_data='menu')   
              ],                     
              [
                InlineKeyboardButton(
                    text="Join Updates Channel",
                    url='https://t.me/cuXmusic')
-             ]
+             ],
+             [       
+               InlineKeyboardButton(
+                   text="❌ Close",
+                   callback_data='cls')
+
+            ]                          
          ]
      )
     file_path= await converter.convert(wget.download(slink))
