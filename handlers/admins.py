@@ -12,9 +12,17 @@ from pyrogram import filters, emoji
 from config import BOT_NAME as BN
 from helpers.filters import command, other_filters
 from helpers.decorators import errors, authorized_users_only
-from config import que
+from config import que, admins as a
 
-
+@Client.on_message(filters.command('adminreset'))
+async def update_admin(client, message):
+    global a
+    admins = await client.get_chat_members(message.chat.id, filter="administrators")
+    new_ads = []
+    for u in admins:
+        new_ads.append(u.user.id)
+    a[message.chat.id] = new_ads
+    await message.reply_text('Sucessfully updated admin list in **{}**'.format(message.chat.title))
 
 
 
@@ -99,4 +107,3 @@ async def skip(_, message: Message):
 async def admincache(client, message: Message):
     set(message.chat.id, [member.user for member in await message.chat.get_members(filter="administrators")])
     #await message.reply_text("✯𝗩𝗖𝗣𝗹𝗮𝘆𝗕𝗼𝘁✯=❇️ Admin cache refreshed!")
-
