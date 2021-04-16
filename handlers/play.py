@@ -2,7 +2,7 @@ from os import path
 from typing import Dict
 from pyrogram import Client
 from pyrogram.types import Message, Voice
-
+from typing import Callable, Coroutine, Dict, List, Tuple, Union
 from callsmusic import callsmusic, queues
 
 from helpers.admins import get_administrators
@@ -40,7 +40,6 @@ from config import que
 from Python_ARQ import ARQ
 import json
 import wget
-inuka = 00000000
 chat_id = None
 
            
@@ -185,7 +184,20 @@ def r_ply(type_):
     & filters.group
     & ~ filters.edited
 )
-@errors
+async def ee(client, message):
+    queue = que.get(message.chat.id)
+    stats = updated_stats(message.chat, queue)
+    if stats:
+        await message.reply(stats)              
+    else:
+        await message.reply('No VC instances running in this chat')
+
+@Client.on_message(
+    filters.command("player")
+    & filters.group
+    & ~ filters.edited
+)
+@authorized_users_only
 async def settings(client, message):
     playing = None
     if message.chat.id in callsmusic.pytgcalls.active_calls:
@@ -201,9 +213,11 @@ async def settings(client, message):
     else:
         await message.reply('No VC instances running in this chat')
 
+
+
 @Client.on_callback_query(filters.regex(pattern=r'^(play|pause|skip|leave|puse|resume|playlist)$'))
 async def m_cb(b, cb):
-    global que
+    global que    
     qeue = que.get(cb.message.chat.id)
     type_ = cb.matches[0].group(1)
     chat_id = cb.message.chat.id
@@ -234,18 +248,30 @@ async def m_cb(b, cb):
             callsmusic.pytgcalls.resume_stream(chat_id)
             await cb.answer('Music Resumed!')
             await cb.message.edit(updated_stats(m_chat, qeue), reply_markup=r_ply('pause'))
+                     
 
+    elif type_ == 'download':
+        if (
+            chat_id not in callsmusic.pytgcalls.active_calls
+            ) or (
+                callsmusic.pytgcalls.active_calls[chat_id] == 'playing'
+            ):
+                await cb.answer('Time is out honey!', show_alert=True)
+        else:
+            callsmusic.pytgcalls.resume_stream(chat_id)
+            await cb.answer('Music Download started!')
+            await cb.message.edit(updated_stats(m_chat, qeue), reply_markup=r_ply('pause'))
     elif type_ == 'playlist':
-        queue = que.get(message.chat.id)
+        queue = que.get(cb.message.chat.id)
         if not queue:
             
-            await message.reply_text('Player is idle')
+            await cb.message.edit('Player is idle')
         temp = []
         for t in queue:
             temp.append(t)
         now_playing = temp[0][0]
         by = temp[0][1].mention(style='md')
-        msg = "**Now Playing** in {}".format(message.chat.title)
+        msg = "**Now Playing** in {}".format(cb.message.chat.title)
         msg += "\n- "+ now_playing
         msg += "\n- Req by "+by
         temp.pop(0)
@@ -265,20 +291,22 @@ async def m_cb(b, cb):
             ) or (
                 callsmusic.pytgcalls.active_calls[chat_id] == 'playing'
             ):
-                await cb.answer('Chat is not connected!', show_alert=True)
+                await cb.answer('Chat is not connected or already playng', show_alert=True)
         else:
             callsmusic.pytgcalls.resume_stream(chat_id)
             await cb.answer('Music Resumed!')     
     elif type_ == 'puse':
         if (
             chat_id not in callsmusic.pytgcalls.active_calls
-            ) or (
-                callsmusic.pytgcalls.active_calls[chat_id] == 'playing'
-            ):
-                await cb.answer('Chat is not connected!', show_alert=True)
+                ) or (
+                    callsmusic.pytgcalls.active_calls[chat_id] == 'paused'
+                ):
+            await cb.answer('Chat is not connected or already paused', show_alert=True)
         else:
-            callsmusic.pytgcalls.resume_stream(chat_id)
-            await cb.answer('Music Resumed!')     
+            callsmusic.pytgcalls.pause_stream(chat_id)
+            
+            await cb.answer('Music Paused!')
+
            
     elif type_ == 'skip':
         if qeue:
@@ -298,7 +326,7 @@ async def m_cb(b, cb):
                     callsmusic.queues.get(chat_id)["file"]
                 )
                 await cb.answer()
-                await cb.message.edit(updated_stats(m_chat, qeue), reply_markup=r_ply(the_data))
+                await cb.message.edit(updated_stats(m_chat, queue), reply_markup=r_ply(the_data))
                 await cb.message.reply_text(f'- Skipped track\n- Now Playing **{qeue[0][0]}**')
 
     else:
@@ -314,9 +342,9 @@ async def m_cb(b, cb):
             await cb.answer('Chat is not connected!', show_alert=True)
 
 @Client.on_message(command("play") & other_filters)
-@errors
 async def play(_, message: Message):
     global que
+    global lol
     lel = await message.reply("🔄 **Processing**")
     sender_id = message.from_user.id
     sender_name = message.from_user.first_name
@@ -331,11 +359,8 @@ async def play(_, message: Message):
         keyboard = InlineKeyboardMarkup(
                 [
                     [
-                      InlineKeyboardButton('⏹', callback_data='leave'),
-                      InlineKeyboardButton('⏸', callback_data= 'puse'),
-                      InlineKeyboardButton('▶️', callback_data= 'resume'),
-                      InlineKeyboardButton('⏭', callback_data='skip')
-                
+                        InlineKeyboardButton('Playlist 📖 ', callback_data='playlist')
+
                     ],
                     [
                         InlineKeyboardButton(
@@ -393,10 +418,8 @@ async def play(_, message: Message):
         keyboard = InlineKeyboardMarkup(
                 [   
                     [
-                      InlineKeyboardButton('⏹', callback_data='leave'),
-                      InlineKeyboardButton('⏸', callback_data= 'puse'),
-                      InlineKeyboardButton('▶️', callback_data= 'resume'),
-                      InlineKeyboardButton('⏭', callback_data='skip')
+                               
+                        InlineKeyboardButton('Playlist 📖', callback_data='playlist')
                 
                     ],                     
                     [
@@ -438,7 +461,7 @@ async def play(_, message: Message):
         await message.reply_photo(
         photo="final.png",
         reply_markup=keyboard,
-        caption="▶️ **Playing** here the song requested by {} via cuXmusic😜".format(
+        caption="▶️ **Playing** here the song requested by {} via cuXmusic 😜".format(
         message.from_user.mention()
         ),
     )
@@ -474,11 +497,7 @@ async def deezer(client: Client, message_: Message):
     keyboard = InlineKeyboardMarkup(
          [   
              [
-               InlineKeyboardButton('⏹', callback_data='leave'),
-               InlineKeyboardButton('⏸', callback_data= 'puse'),
-               InlineKeyboardButton('▶️', callback_data= 'resume'),
-               InlineKeyboardButton('⏭', callback_data='skip')
-
+                 InlineKeyboardButton('Playlist 📖', callback_data='playlist')         
              ],                     
              [
                  InlineKeyboardButton(
@@ -500,7 +519,7 @@ async def deezer(client: Client, message_: Message):
         loc = file_path
         appendable = [s_name, r_by, loc]
         qeue.append(appendable)
-        await res.edit_text(f"✯cuXmusic✯= #️⃣ Queued at position {position}.")
+        await res.edit_text(f"Playing [{title}]({url}) Via [Deezer](https://t.me/cuXmusic")
     else:
         await res.edit_text("✯cuXmusic✯=▶️ Playing.....")
         chat_id = message_.chat.id
@@ -517,7 +536,7 @@ async def deezer(client: Client, message_: Message):
         chat_id=message_.chat.id,
         reply_markup=keyboard,
         photo="final.png",
-        caption=f"Playing [{title}]({url}) Via [Deezer](https://t.me/cuXmusic)."
+        caption=f"✯cuXmusic✯= #️⃣ Queued at position {position}.)."
     ) 
     os.remove("final.png")
 
@@ -554,11 +573,7 @@ async def jiosaavn(client: Client, message_: Message):
     keyboard = InlineKeyboardMarkup(
          [   
              [
-               InlineKeyboardButton('⏹', callback_data='leave'),
-               InlineKeyboardButton('⏸', callback_data= 'puse'),
-               InlineKeyboardButton('▶️', callback_data= 'resume'),
-               InlineKeyboardButton('⏭', callback_data='skip')
-
+               InlineKeyboardButton('Playlist 📖', callback_data='playlist')
              ],                     
              [
                InlineKeyboardButton(
@@ -576,7 +591,8 @@ async def jiosaavn(client: Client, message_: Message):
         loc = file_path
         appendable = [s_name, r_by, loc]
         qeue.append(appendable)
-        await res.edit_text(f"✯cuXmusic✯=#️⃣ Queued at position {position}.")
+        await res.edit_text(f"Playing {sname} Via [Jiosaavn](https://t.me/cuXmusic)")
+           
     else:
         await res.edit_text("✯cuXmusic✯=▶️ Playing.....")
         chat_id = message_.chat.id
@@ -595,7 +611,7 @@ async def jiosaavn(client: Client, message_: Message):
         chat_id=message_.chat.id,
         reply_markup=keyboard,
         photo="final.png",
-        caption=f"Playing {sname} Via [Jiosaavn](https://t.me/cuXmusic)",
+        caption=f"✯cuXmusic✯=#️⃣ Queued at position {position}",
         
     )
     os.remove("final.png")
