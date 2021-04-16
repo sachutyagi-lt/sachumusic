@@ -1,5 +1,5 @@
 from asyncio.queues import QueueEmpty
-
+from cache.admins import set
 from pyrogram import Client
 from pyrogram.types import Message
 from callsmusic import callsmusic
@@ -91,4 +91,12 @@ async def skip(_, message: Message):
         return
     await message.reply_text(f'- Skipped **{skip[0]}**\n- Now Playing **{qeue[0][0]}**')
 
+
+@Client.on_message(
+    filters.command("admincache")
+)
+@errors
+async def admincache(client, message: Message):
+    set(message.chat.id, [member.user for member in await message.chat.get_members(filter="administrators")])
+    #await message.reply_text("✯𝗩𝗖𝗣𝗹𝗮𝘆𝗕𝗼𝘁✯=❇️ Admin cache refreshed!")
 
