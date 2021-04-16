@@ -643,7 +643,7 @@ async def deezer(client: Client, message_: Message):
         qeue.append(appendable)
         await res.edit_text(f"Playing [{title}]({url}) Via [Deezer](https://t.me/cuXmusic")
     else:
-        await res.edit_text(✯cuXmusic✯=▶️ Playing.....")
+        await res.edit_text("✯cuXmusic✯=▶️ Playing.....")
         chat_id = message_.chat.id
         que[chat_id] = []
         qeue = que.get(message_.chat.id)
