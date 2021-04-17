@@ -4,7 +4,6 @@ from pyrogram import Client
 from pyrogram.types import Message, Voice
 from typing import Callable, Coroutine, Dict, List, Tuple, Union
 from callsmusic import callsmusic, queues
-from config import admins as inuka
 from helpers.admins import get_administrators
 from os import path
 import requests
@@ -527,7 +526,7 @@ async def play(_, message: Message):
         await message.reply_photo(
         photo="final.png",
         reply_markup=keyboard,
-        caption="▶️ **Playing** here the song requested by {} via cuXmusic 😜".format(
+        caption="▶️ **Playing** here the song requested by {} via cuXmusic😜".format(
         message.from_user.mention()
         ),
     )
@@ -591,10 +590,12 @@ async def deezer(client: Client, message_: Message):
         await lel.reply(
             "<i>Looks like @chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
         )
-        pass                 
+        pass    
+
     text = message_.text.split(" ", 1)
     queryy = text[1]
-    res = await message_.reply_text(f"Searching 👀👀👀 for `{queryy}` on deezer")
+    res = lel
+    await res.edit(f"Searching 👀👀👀 for `{queryy}` on deezer")
     try:
         arq = ARQ("https://thearq.tech")
         r = await arq.deezer(query=queryy, limit=1)
@@ -679,7 +680,7 @@ async def jiosaavn(client: Client, message_: Message):
        usar = await USER.get_me()
        wew = usar.id
     except:
-       wew  = 1658025987
+       wew = 1658025987
     for administrator in administrators:
        if administrator == message_.from_user.id:  
                try:
@@ -717,7 +718,8 @@ async def jiosaavn(client: Client, message_: Message):
     chat_id=message_.chat.id
     text = message_.text.split(" ", 1)
     query = text[1]
-    res = await message_.reply_text(f"Searching 👀👀👀 for `{query}` on jio saavn")
+    res = lel
+    await res.edit(f"Searching 👀👀👀 for `{query}` on jio saavn")
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
@@ -759,12 +761,19 @@ async def jiosaavn(client: Client, message_: Message):
     if message_.chat.id in callsmusic.pytgcalls.active_calls:
         position = await queues.put(message_.chat.id, file=file_path)
         qeue = que.get(message_.chat.id)
-        s_name = title
+        s_name = sname
         r_by = message_.from_user
         loc = file_path
         appendable = [s_name, r_by, loc]
         qeue.append(appendable)
-        await res.edit_text(f"Playing {sname} Via [Jiosaavn](https://t.me/cuXmusic)")
+        await res.delete()
+        m = await client.send_photo(
+            chat_id=message_.chat.id,
+            reply_markup=keyboard,
+            photo="final.png",
+            caption=f"✯cuXmusic✯=#️⃣ Queued at position {position}",
+        
+        )           
            
     else:
         await res.edit_text("✯cuXmusic✯=▶️ Playing.....")
@@ -784,7 +793,7 @@ async def jiosaavn(client: Client, message_: Message):
         chat_id=message_.chat.id,
         reply_markup=keyboard,
         photo="final.png",
-        caption=f"✯cuXmusic✯=#️⃣ Queued at position {position}",
+        caption=f"Playing {sname} Via [Jiosaavn](https://t.me/cuXmusic)",
         
     )
     os.remove("final.png")
