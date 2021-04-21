@@ -26,7 +26,7 @@ async def addchannel(client, message):
         await USER.join_chat(invitelink)
     except UserAlreadyParticipant:
         await message.reply_text(
-            "<b>@DaisyXhelper already in your chat</b>",
+            "<b>@chatuniversemusic1 already in your chat</b>",
         )
         pass
     await message.reply_text(
