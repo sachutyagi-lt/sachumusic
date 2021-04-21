@@ -1,6 +1,6 @@
 from pyrogram import Client
 from pytgcalls import PyTgCalls
-
+import asyncio
 import config
 from . import queues
 
