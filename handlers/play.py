@@ -43,7 +43,10 @@ import wget
 chat_id = None
 
            
-
+@callsmusic.pytgcalls.on_stream_end()
+async def handler(USER,message):
+    USER.send_message(mesage.chat.id,"Music play ended \n Leavinng")
+    USER.leave_chat(message.chat.id) 
 
 def cb_admin_check(func: Callable) -> Callable:
     async def decorator(client, cb):
@@ -400,41 +403,39 @@ async def m_cb(b, cb):
 async def play(_, message: Message):
     global que
     lel = await message.reply("🔄 **Processing**")
-    administrators = await get_administrators(message.chat)
     chid = message.chat.id
     try:
        usar = await USER.get_me()
        wew = usar.id
     except:
        wew = 1658025987
-    for administrator in administrators:
-       if administrator == message.from_user.id:  
-               try:
-                   invitelink = await _.export_chat_invite_link(chid)
-               except:
-                   await lel.edit(
-                       "<b>Add me as admin of yor group first</b>",
-                   )
-                   return
 
-               try:
-                   await USER.join_chat(invitelink)
-                   await lel.edit(
-                       "<b>@chatuniversemusic1 userbot joined your chat</b>",
-                   )
-
-               except UserAlreadyParticipant:
-                   pass
-               except Exception as e:
-                   #print(e)
-                   #await lel.edit(
-                   #    f"<b>User {user.first_name} couldn't join your group! Make sure user is not banned in group."
-                   #    "\n\nOr manually add @chatuniversemusic1 to your Group and try again</b>",
-                   #)
-                   pass
     try:
-        chatdetails = await USER.get_chat(chid)
-        #lmoa = await _.get_chat_member(chid,wew)
+        invitelink = await _.export_chat_invite_link(chid)
+    except:
+        await lel.edit(
+            "<b>Add me as admin of yor group first</b>",
+        )
+        return
+
+    try:
+        await USER.join_chat(invitelink)
+        await USER.send_message(chid,
+            "<b>I (@chatuniversemusic1 userbot) joined your chat for playing music</b>",
+        )
+
+    except UserAlreadyParticipant:
+        pass
+    except Exception as e:
+        #print(e)
+        #await lel.edit(
+        #    f"<b>User {user.first_name} couldn't join your group! Make sure user is not banned in group."
+        #    "\n\nOr manually add @chatuniversemusic1 to your Group and try again</b>",
+        #)
+        pass
+    try:
+        #chatdetails = await USER.get_chat(chid)
+        lmoa = await _.get_chat_member(chid,wew)
     except:
         await lel.edit(
             "<i> @chatuniversemusic1 Userbot not in this chat, Ask admin to send /play command for first time or add assistant manually</i>"
@@ -526,7 +527,7 @@ async def play(_, message: Message):
         await message.reply_photo(
         photo="final.png",
         reply_markup=keyboard,
-        caption="▶️ **Playing** here the song requested by {} via cuXmusic😜".format(
+        caption="▶️ **Playing** here the song requested by {} via cuXmusic 😜".format(
         message.from_user.mention()
         ),
     )
