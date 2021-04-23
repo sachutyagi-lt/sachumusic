@@ -20,26 +20,22 @@ async def addchannel(client, message):
     try:
         user = await USER.get_me()
     except:
-        user.first_name =  "CuXmusic"
+        user.first_name =  "cuXMusic"
 
     try:
         await USER.join_chat(invitelink)
     except UserAlreadyParticipant:
         await message.reply_text(
-            "<b>@chatuniversemusic1 already in your chat</b>",
+            "<b>@Chatuniversemusic1 already in your chat</b>",
         )
         pass
-    await message.reply_text(
-            "<b>@chatuniversemusic1 userbot joined your chat</b>",
-        )
-    
-@USER.on_message(filters.group & filters.command(["userbotleave"]))
-async def rem(USER, message):
-    try:
-        await USER.leave_chat(message.chat.id)
-    except:  
+    except Exception as e:
+        print(e)
         await message.reply_text(
-            f"<b>User couldn't leave your group! Make sure user is not banned in group."
+            f"<b>User {user.first_name} couldn't join your group! Make sure user is not banned in group."
             "\n\nOr manually add @chatuniversemusic1 to your Group and try again</b>",
         )
         return
+    await message.reply_text(
+            "<b>@chatuniversemusic1 userbot joined your chat</b>",
+        )
